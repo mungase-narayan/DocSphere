@@ -12,6 +12,9 @@ import ImageResize from "tiptap-extension-resize-image";
 import Underline from "@tiptap/extension-underline";
 import FontFamily from "@tiptap/extension-font-family";
 import TextStyle from "@tiptap/extension-text-style";
+import Highlight from "@tiptap/extension-highlight";
+import Link from "@tiptap/extension-link";
+import { Color } from "@tiptap/extension-color";
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import { useEditorStore } from "@/store/use-editor-store";
@@ -53,6 +56,13 @@ const Editor = () => {
     },
     extensions: [
       StarterKit,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        defaultProtocol: "https",
+      }),
+      Highlight.configure({ multicolor: true }),
+      Color,
       FontFamily,
       TextStyle,
       Underline,
