@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
+
+import type { LucideIcon } from "lucide-react";
+import { type ColorResult, SketchPicker } from "react-color";
 import {
   Search,
   Undo2,
@@ -35,15 +39,17 @@ import {
   ListTodoIcon,
   RemoveFormattingIcon,
   ChevronDownIcon,
+  ImageIcon,
+  UploadIcon,
+  SearchIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -51,10 +57,172 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
-import type { LucideIcon } from "lucide-react";
+
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+
 import { useEditorStore } from "@/store/use-editor-store";
 import { type Level } from "@tiptap/extension-heading";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogFooter, DialogHeader } from "@/components/ui/dialog";
+import { DialogContent, DialogTitle } from "@radix-ui/react-dialog";
+
+const ImageButton = () => {
+  const { editor } = useEditorStore();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+
+  const onChange = (src: string) => {
+    editor?.chain().focus().setImage({ src }).run();
+  };
+
+  const onUpload = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const imageUrl = URL.createObjectURL(file);
+        onChange(imageUrl);
+      }
+    };
+
+    input.click();
+  };
+
+  const handleImageUrlSubmit = () => {};
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="p-2">
+            <ImageIcon className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="p-2.5 flex items-center justify-center gap-x-2">
+          <DropdownMenuItem onClick={onUpload}>
+            <UploadIcon className="size-4 mr-2" />
+            Upload
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
+            <SearchIcon className="size-4 mr-2" />
+            Paste image url
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Inser image URL</DialogTitle>
+          </DialogHeader>
+          <Input
+            placeholder="Insert image URL"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleImageUrlSubmit();
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button onClick={handleImageUrlSubmit}>Insert</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+const LinkButton = () => {
+  const { editor } = useEditorStore();
+  const [value, setValue] = useState(editor?.getAttributes("link").href || "");
+
+  const onChange = (href: string) => {
+    editor?.chain().focus().extendMarkRange("link").setLink({ href }).run();
+    setValue("");
+  };
+  return (
+    <DropdownMenu
+      onOpenChange={(open) => {
+        if (open) {
+          setValue(editor?.getAttributes("link").href || "");
+        }
+      }}
+    >
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="p-2">
+          <Link className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="p-2.5 flex items-center justify-center gap-x-2">
+        <Input
+          placeholder="https://example.com"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <Button variant={"outline"} onClick={() => onChange(value)}>
+          Aplly
+        </Button>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+const HighlightColorButton = () => {
+  const { editor } = useEditorStore();
+  const value = editor?.getAttributes("highlight").color || "#FFFF00";
+
+  const onChange = (color: ColorResult) => {
+    editor?.chain().focus().setHighlight({ color: color.hex }).run();
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="p-2">
+          <div
+            className="w-4 h-4 p-1 rounded-sm flex items-center justify-center"
+            style={{ backgroundColor: value }}
+          >
+            <span className="text-xs font-bold text-gray-800">A</span>
+          </div>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="p-0">
+        <SketchPicker color={value} onChange={onChange} />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+const TextColorButton = () => {
+  const { editor } = useEditorStore();
+  const value = editor?.getAttributes("textStyle").color || "#000000";
+  const onChange = (color: ColorResult) => {
+    editor?.chain().focus().setColor(color.hex).run();
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="p-2 relative">
+          <span className="text-gray-600 font-bold">A</span>
+          <div
+            className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-0.5 bg-gray-800"
+            style={{ backgroundColor: value }}
+          ></div>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="p-0">
+        <SketchPicker color={value} onChange={onChange} />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 const HeadingLevelButton = () => {
   const { editor } = useEditorStore();
@@ -320,11 +488,6 @@ export default function ResponsiveDocsToolbar() {
         },
         isActive: false,
       },
-      {
-        label: "Insert Link",
-        icon: Link,
-        onClick: () => console.log("Link clicked"),
-      },
     ],
     // List sections
     [
@@ -356,14 +519,6 @@ export default function ResponsiveDocsToolbar() {
         onClick: () => console.log("Indent clicked"),
       },
     ],
-    // More options
-    [
-      {
-        label: "More Options",
-        icon: MoreHorizontal,
-        onClick: () => console.log("More options clicked"),
-      },
-    ],
   ];
 
   // Mobile priority sections
@@ -378,32 +533,32 @@ export default function ResponsiveDocsToolbar() {
       {
         label: "Undo",
         icon: Undo2,
-        onClick: () => console.log("Undo clicked"),
+        onClick: () => editor?.chain().focus().undo().run(),
       },
       {
         label: "Redo",
         icon: Redo2,
-        onClick: () => console.log("Redo clicked"),
+        onClick: () => editor?.chain().focus().redo().run(),
       },
     ],
     [
       {
         label: "Bold",
         icon: Bold,
-        onClick: () => toggleButton("bold"),
-        isActive: activeButtons.includes("bold"),
+        onClick: () => editor?.chain().focus().toggleBold().run(),
+        isActive: editor?.isActive("bold"),
       },
       {
         label: "Italic",
         icon: Italic,
-        onClick: () => toggleButton("italic"),
-        isActive: activeButtons.includes("italic"),
+        onClick: () => editor?.chain().focus().toggleItalic().run(),
+        isActive: editor?.isActive("italic"),
       },
       {
         label: "Underline",
         icon: Underline,
-        onClick: () => toggleButton("underline"),
-        isActive: activeButtons.includes("underline"),
+        onClick: () => editor?.chain().focus().toggleUnderline().run(),
+        isActive: editor?.isActive("underline"),
       },
     ],
   ];
@@ -565,7 +720,7 @@ export default function ResponsiveDocsToolbar() {
       {/* Main Toolbar */}
       <div className=" border-gray-100">
         {/* Mobile Priority Toolbar */}
-        <div className="flex lg:hidden items-center px-2 py-2 space-x-1 overflow-x-auto">
+        <div className="flex md:hidden lg:hidden items-center px-2 py-2 space-x-1 overflow-x-auto">
           {mobileSections.map((section, sectionIndex) => (
             <div key={sectionIndex} className="flex items-center space-x-1">
               {section.map((item) => (
@@ -669,7 +824,15 @@ export default function ResponsiveDocsToolbar() {
             </div>
           ))}
 
-          {/* Special sections that need custom handling */}
+          <Separator orientation="vertical" className="h-6 mx-1" />
+
+          <Button variant="ghost" size="sm" className="p-2">
+            <MessageSquarePlusIcon />
+          </Button>
+
+          <LinkButton />
+          <ImageButton />
+
           <Separator orientation="vertical" className="h-6 mx-1" />
 
           {/* Zoom */}
@@ -739,21 +902,18 @@ export default function ResponsiveDocsToolbar() {
             }}
             label="Increase font size"
           />
-
           <Separator orientation="vertical" className="h-6 mx-1" />
 
           {/* Text Color */}
-          <Button variant="ghost" size="sm" className="p-2 relative">
-            <span className="text-gray-600 font-bold">A</span>
-            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-0.5 bg-gray-800"></div>
-          </Button>
+          <TextColorButton />
 
           {/* Highlight */}
-          <Button variant="ghost" size="sm" className="p-2">
+          {/* <Button variant="ghost" size="sm" className="p-2">
             <div className="w-4 h-4 bg-yellow-300 rounded-sm flex items-center justify-center">
               <span className="text-xs font-bold text-gray-800">A</span>
             </div>
-          </Button>
+          </Button> */}
+          <HighlightColorButton />
 
           <Separator orientation="vertical" className="h-6 mx-1" />
 
