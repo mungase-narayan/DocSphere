@@ -30,7 +30,6 @@ import {
   Settings,
   Minus,
   Plus,
-  SpellCheck,
   SpellCheckIcon,
   MessageSquarePlusIcon,
   ListTodoIcon,
