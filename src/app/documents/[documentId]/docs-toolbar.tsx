@@ -209,7 +209,6 @@ export default function ResponsiveDocsToolbar() {
 
   const [zoom, setZoom] = useState("100%");
   const [textStyle, setTextStyle] = useState("Normal text");
-  const [font, setFont] = useState("Arial");
   const [fontSize, setFontSize] = useState("11");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeButtons, setActiveButtons] = useState<string[]>([]);
