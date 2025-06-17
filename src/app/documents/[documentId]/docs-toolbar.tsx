@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
+import { type Level } from "@tiptap/extension-heading";
 import type { LucideIcon } from "lucide-react";
 import { type ColorResult, SketchPicker } from "react-color";
 import {
@@ -14,11 +15,6 @@ import {
   Italic,
   Underline,
   Link,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  List,
-  ListOrdered,
   Indent,
   Outdent,
   MoreHorizontal,
@@ -28,11 +24,6 @@ import {
   Share,
   User,
   Menu,
-  Type,
-  Palette,
-  Settings,
-  Minus,
-  Plus,
   SpellCheckIcon,
   MessageSquarePlusIcon,
   ListTodoIcon,
@@ -47,6 +38,9 @@ import {
   AlignJustifyIcon,
   ListIcon,
   ListOrderedIcon,
+  MinusIcon,
+  PlusIcon,
+  ListCollapseIcon,
 } from "lucide-react";
 
 import {
@@ -65,10 +59,10 @@ import {
 
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 import { useEditorStore } from "@/store/use-editor-store";
-import { type Level } from "@tiptap/extension-heading";
-import { Input } from "@/components/ui/input";
+
 import {
   Dialog,
   DialogContent,
@@ -76,6 +70,199 @@ import {
   DialogTitle,
   DialogHeader,
 } from "@/components/ui/dialog";
+
+const LineHeightButton = () => {
+  const { editor } = useEditorStore();
+
+  const lineheight = [
+    {
+      label: "Default",
+      value: "normal",
+    },
+    {
+      label: "Single",
+      value: "1",
+    },
+    {
+      label: "1.15",
+      value: "1.15",
+    },
+    {
+      label: "1.5",
+      value: "1.5",
+    },
+    {
+      label: "Double",
+      value: "2",
+    },
+  ];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={"ghost"}
+          className={
+            "h-8 min-w-7 shrink-0 items-center justify-center rounded-sm hover:bg-neutral-200/60  px-1.5 overflow-hidden text-sm"
+          }
+        >
+          <ListCollapseIcon className="size-4" />
+          <ChevronDown className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="p-1 flex flex-col gap-y-1 ">
+        {lineheight.map(({ label, value }) => (
+          <Button
+            variant={"ghost"}
+            key={value}
+            onClick={() => editor?.chain().focus().setLineHeight(value).run()}
+            className={cn(
+              "flex items-center justify-center gap-x-2 px-2 py-1 rounded-sm hover:bg-slate-200/60",
+              editor?.getAttributes("paragraph").lineHeight === value &&
+                "bg-slate-200/60"
+            )}
+          >
+            <span className="text-sm">{label}</span>
+          </Button>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+const IncreaseIndentButton = () => {
+  const { editor } = useEditorStore();
+
+  const increaseIndent = () => {
+    editor?.chain().focus().sinkListItem("listItem").run();
+  };
+
+  const isDisabled = !editor?.can().sinkListItem("listItem");
+
+  return (
+    <Button
+      variant="ghost"
+      onClick={increaseIndent}
+      disabled={isDisabled}
+      className={
+        "h-8 min-w-7 shrink-0 items-center justify-center rounded-sm hover:bg-neutral-200/60  px-1.5 overflow-hidden"
+      }
+    >
+      <Indent className="w-4 h-4" />
+    </Button>
+  );
+};
+
+const DecreaseIndentButton = () => {
+  const { editor } = useEditorStore();
+
+  const decreaseIndent = () => {
+    editor?.chain().focus().liftListItem("listItem").run();
+  };
+
+  const isDisabled = !editor?.can().liftListItem("listItem");
+
+  return (
+    <Button
+      variant="ghost"
+      onClick={decreaseIndent}
+      disabled={isDisabled}
+      className={
+        "h-8 min-w-7 shrink-0 items-center justify-center rounded-sm hover:bg-neutral-200/60  px-1.5 overflow-hidden"
+      }
+    >
+      <Outdent className="w-4 h-4" />
+    </Button>
+  );
+};
+
+const FontSizeButton = () => {
+  const { editor } = useEditorStore();
+  const currentFontSize = editor?.getAttributes("textStyle").fontSize
+    ? editor?.getAttributes("textStyle").fontSize.replace("px", "")
+    : "16";
+
+  const [fontSize, setFontSize] = useState(currentFontSize);
+  const [inputValue, setInputValue] = useState(fontSize);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const updateFontSize = (newSize: string) => {
+    const size = parseInt(newSize);
+    if (!isNaN(size) && size > 0) {
+      editor?.chain().focus().setFontSize(`${size}px`).run();
+      setFontSize(newSize);
+      setInputValue(newSize);
+      setIsEditing(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleInputBlur = () => {
+    updateFontSize(inputValue);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      updateFontSize(inputValue);
+      editor?.commands.focus();
+    }
+  };
+
+  const increment = () => {
+    const newSize = parseInt(fontSize) + 1;
+    updateFontSize(newSize.toString());
+  };
+
+  const decrement = () => {
+    const newSize = parseInt(fontSize) - 1;
+    if (newSize > 0) {
+      updateFontSize(newSize.toString());
+    }
+  };
+  return (
+    <div className="flex items-center gap-x-1">
+      <Button
+        variant={"ghost"}
+        onClick={decrement}
+        className="h-7 w-7 shrink-0 flex items-center justify-center hover:bg-neutral-200/80 rounded-sm"
+      >
+        <MinusIcon className="size-4" />
+      </Button>
+      {isEditing ? (
+        <Input
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onBlur={handleInputBlur}
+          onKeyDown={handleKeyDown}
+          className="h-7 w-12 text-sm text-center  border border-neutral-400 bg-transparent focus:outline-none focus:ring-0 rounded-sm"
+        />
+      ) : (
+        <Button
+          variant={"ghost"}
+          onClick={() => {
+            setIsEditing(true);
+            setFontSize(currentFontSize);
+          }}
+          className="h-7 w-10 text-sm text-center  border border-neutral-400 rounded-sm bg-transparent cursor-text"
+        >
+          {currentFontSize}
+        </Button>
+      )}
+      <Button
+        variant={"ghost"}
+        onClick={increment}
+        className="h-7 w-7 shrink-0 flex items-center justify-center hover:bg-neutral-200/80 rounded-sm"
+      >
+        <PlusIcon className="size-4" />
+      </Button>
+    </div>
+  );
+};
 
 const AlignButton = () => {
   const { editor } = useEditorStore();
@@ -123,7 +310,7 @@ const AlignButton = () => {
             key={value}
             onClick={() => editor?.chain().focus().setTextAlign(value).run()}
             className={cn(
-              "flex items-center justify-center gap-x-2 px-2 py-1 rounded-sm hover:bg-neutral-200/80",
+              "flex items-center justify-center gap-x-2 px-2 py-1 rounded-sm hover:bg-slate-200/60",
               editor?.isActive({ TextAlign: value }) && "bg-neutral-200/80"
             )}
           >
@@ -297,7 +484,7 @@ const TextColorButton = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="p-2 relative">
-          <span className="text-gray-600 font-bold">A</span>
+          <span className="text-gray-600 font-bold p-0.5">A</span>
           <div
             className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-0.5 bg-gray-800"
             style={{ backgroundColor: value }}
@@ -463,18 +650,7 @@ export default function ResponsiveDocsToolbar() {
   const { editor } = useEditorStore();
 
   const [zoom, setZoom] = useState("100%");
-  const [textStyle, setTextStyle] = useState("Normal text");
-  const [fontSize, setFontSize] = useState("11");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeButtons, setActiveButtons] = useState<string[]>([]);
-
-  const toggleButton = (buttonName: string) => {
-    setActiveButtons((prev) =>
-      prev.includes(buttonName)
-        ? prev.filter((name) => name !== buttonName)
-        : [...prev, buttonName]
-    );
-  };
 
   const menuItems = [
     "File",
@@ -582,19 +758,6 @@ export default function ResponsiveDocsToolbar() {
         isActive: editor?.isActive("orderedList"),
       },
     ],
-    // Indent section
-    [
-      {
-        label: "Decrease Indent",
-        icon: Outdent,
-        onClick: () => console.log("Outdent clicked"),
-      },
-      {
-        label: "Increase Indent",
-        icon: Indent,
-        onClick: () => console.log("Indent clicked"),
-      },
-    ],
   ];
 
   // Mobile priority sections
@@ -607,6 +770,14 @@ export default function ResponsiveDocsToolbar() {
     // Essential mobile tools
     [
       {
+        label: "Search",
+        icon: Search,
+        onClick: () => console.log("Search clicked"),
+      },
+    ],
+    // Undo/Redo/Print section
+    [
+      {
         label: "Undo",
         icon: Undo2,
         onClick: () => editor?.chain().focus().undo().run(),
@@ -616,7 +787,13 @@ export default function ResponsiveDocsToolbar() {
         icon: Redo2,
         onClick: () => editor?.chain().focus().redo().run(),
       },
+      {
+        label: "Print",
+        icon: Printer,
+        onClick: () => window.print(),
+      },
     ],
+    // Text formatting section
     [
       {
         label: "Bold",
@@ -637,6 +814,47 @@ export default function ResponsiveDocsToolbar() {
         isActive: editor?.isActive("underline"),
       },
     ],
+    [
+      {
+        label: "Spell Check",
+        icon: SpellCheckIcon,
+        onClick: () => {
+          const current = editor?.view.dom.getAttribute("spellcheck");
+          editor?.view.dom.setAttribute(
+            "spellcheck",
+            current === "false" ? "true" : "false"
+          );
+        },
+      },
+      {
+        label: "List Todo",
+        icon: ListTodoIcon,
+        onClick: () => editor?.chain().focus().toggleTaskList().run(),
+        isActive: editor?.isActive("taskList"),
+      },
+      {
+        label: "Remove Formatting",
+        icon: RemoveFormattingIcon,
+        onClick: () => editor?.chain().focus().unsetAllMarks().run(),
+      },
+    ],
+    // List sections
+    [
+      {
+        label: "Bulleted List",
+        icon: ListIcon,
+        onClick: () => editor?.chain().focus().toggleBulletList().run(),
+        isActive: editor?.isActive("bulletList"),
+      },
+    ],
+    [
+      {
+        label: "Ordered List",
+        icon: ListOrderedIcon,
+        onClick: () => editor?.chain().focus().toggleOrderedList().run(),
+        isActive: editor?.isActive("orderedList"),
+      },
+    ],
   ];
 
   // Tablet sections
@@ -652,42 +870,85 @@ export default function ResponsiveDocsToolbar() {
         icon: Search,
         onClick: () => console.log("Search clicked"),
       },
+    ],
+    // Undo/Redo/Print section
+    [
       {
         label: "Undo",
         icon: Undo2,
-        onClick: () => console.log("Undo clicked"),
+        onClick: () => editor?.chain().focus().undo().run(),
       },
       {
         label: "Redo",
         icon: Redo2,
-        onClick: () => console.log("Redo clicked"),
+        onClick: () => editor?.chain().focus().redo().run(),
+      },
+      {
+        label: "Print",
+        icon: Printer,
+        onClick: () => window.print(),
       },
     ],
+    // Text formatting section
     [
       {
         label: "Bold",
         icon: Bold,
-        onClick: () => toggleButton("bold"),
-        isActive: activeButtons.includes("bold"),
+        onClick: () => editor?.chain().focus().toggleBold().run(),
+        isActive: editor?.isActive("bold"),
       },
       {
         label: "Italic",
         icon: Italic,
-        onClick: () => toggleButton("italic"),
-        isActive: activeButtons.includes("italic"),
+        onClick: () => editor?.chain().focus().toggleItalic().run(),
+        isActive: editor?.isActive("italic"),
       },
       {
         label: "Underline",
         icon: Underline,
-        onClick: () => toggleButton("underline"),
-        isActive: activeButtons.includes("underline"),
+        onClick: () => editor?.chain().focus().toggleUnderline().run(),
+        isActive: editor?.isActive("underline"),
       },
     ],
     [
       {
-        label: "Insert Link",
-        icon: Link,
-        onClick: () => console.log("Link clicked"),
+        label: "Spell Check",
+        icon: SpellCheckIcon,
+        onClick: () => {
+          const current = editor?.view.dom.getAttribute("spellcheck");
+          editor?.view.dom.setAttribute(
+            "spellcheck",
+            current === "false" ? "true" : "false"
+          );
+        },
+      },
+      {
+        label: "List Todo",
+        icon: ListTodoIcon,
+        onClick: () => editor?.chain().focus().toggleTaskList().run(),
+        isActive: editor?.isActive("taskList"),
+      },
+      {
+        label: "Remove Formatting",
+        icon: RemoveFormattingIcon,
+        onClick: () => editor?.chain().focus().unsetAllMarks().run(),
+      },
+    ],
+    // List sections
+    [
+      {
+        label: "Bulleted List",
+        icon: ListIcon,
+        onClick: () => editor?.chain().focus().toggleBulletList().run(),
+        isActive: editor?.isActive("bulletList"),
+      },
+    ],
+    [
+      {
+        label: "Ordered List",
+        icon: ListOrderedIcon,
+        onClick: () => editor?.chain().focus().toggleOrderedList().run(),
+        isActive: editor?.isActive("orderedList"),
       },
     ],
   ];
@@ -813,78 +1074,6 @@ export default function ResponsiveDocsToolbar() {
           ))}
 
           <Separator orientation="vertical" className="h-6 mx-1" />
-
-          {/* Text Style Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="px-2 py-1 text-gray-700 flex-shrink-0"
-              >
-                <Type className="w-4 h-4 mr-1" />
-                <ChevronDown className="w-3 h-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setTextStyle("Normal text")}>
-                Normal text
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTextStyle("Title")}>
-                Title
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTextStyle("Heading 1")}>
-                Heading 1
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTextStyle("Heading 2")}>
-                Heading 2
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Color Tools */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-2 flex-shrink-0">
-                <Palette className="w-4 h-4 text-gray-600" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>Text Color</DropdownMenuItem>
-              <DropdownMenuItem>Highlight</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* More Tools */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-2 flex-shrink-0">
-                <Settings className="w-4 h-4 text-gray-600" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>
-                <Link className="w-4 h-4 mr-2" />
-                Insert Link
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <List className="w-4 h-4 mr-2" />
-                Bullet List
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <ListOrdered className="w-4 h-4 mr-2" />
-                Numbered List
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <AlignLeft className="w-4 h-4 mr-2" />
-                Alignment
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Search className="w-4 h-4 mr-2" />
-                Find & Replace
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Desktop Full Toolbar */}
@@ -899,6 +1088,12 @@ export default function ResponsiveDocsToolbar() {
               )}
             </div>
           ))}
+
+          <Separator orientation="vertical" className="h-6 mx-1" />
+
+          {/* Indent section */}
+          <DecreaseIndentButton />
+          <IncreaseIndentButton />
 
           <Separator orientation="vertical" className="h-6 mx-1" />
 
@@ -959,42 +1154,13 @@ export default function ResponsiveDocsToolbar() {
           <Separator orientation="vertical" className="h-6 mx-1" />
 
           {/* Font Size */}
-          <ToolbarButton
-            icon={Minus}
-            onClick={() => {
-              const newSize = Math.max(
-                8,
-                Number.parseInt(fontSize) - 1
-              ).toString();
-              setFontSize(newSize);
-            }}
-            label="Decrease font size"
-          />
-          <div className="px-2 py-1 text-sm text-gray-700 min-w-[24px] text-center">
-            {fontSize}
-          </div>
-          <ToolbarButton
-            icon={Plus}
-            onClick={() => {
-              const newSize = Math.min(
-                72,
-                Number.parseInt(fontSize) + 1
-              ).toString();
-              setFontSize(newSize);
-            }}
-            label="Increase font size"
-          />
+          <FontSizeButton />
           <Separator orientation="vertical" className="h-6 mx-1" />
 
           {/* Text Color */}
           <TextColorButton />
 
           {/* Highlight */}
-          {/* <Button variant="ghost" size="sm" className="p-2">
-            <div className="w-4 h-4 bg-yellow-300 rounded-sm flex items-center justify-center">
-              <span className="text-xs font-bold text-gray-800">A</span>
-            </div>
-          </Button> */}
           <HighlightColorButton />
 
           <Separator orientation="vertical" className="h-6 mx-1" />
@@ -1003,24 +1169,7 @@ export default function ResponsiveDocsToolbar() {
           <AlignButton />
 
           {/* Line Spacing */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-2">
-                <div className="w-4 h-4 flex flex-col justify-between">
-                  <div className="w-full h-0.5 bg-gray-600"></div>
-                  <div className="w-full h-0.5 bg-gray-600"></div>
-                  <div className="w-full h-0.5 bg-gray-600"></div>
-                </div>
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>Single</DropdownMenuItem>
-              <DropdownMenuItem>1.15</DropdownMenuItem>
-              <DropdownMenuItem>1.5</DropdownMenuItem>
-              <DropdownMenuItem>Double</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <LineHeightButton />
         </div>
 
         {/* Tablet Toolbar */}
@@ -1042,78 +1191,9 @@ export default function ResponsiveDocsToolbar() {
 
           <Separator orientation="vertical" className="h-6 mx-1" />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="px-2 py-1 text-gray-700 flex-shrink-0"
-              >
-                {textStyle}
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setTextStyle("Normal text")}>
-                Normal text
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTextStyle("Title")}>
-                Title
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTextStyle("Heading 1")}>
-                Heading 1
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-2 flex-shrink-0">
-                <AlignLeft className="w-4 h-4 text-gray-600" />
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>
-                <AlignLeft className="w-4 h-4 mr-2" />
-                Left align
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <AlignCenter className="w-4 h-4 mr-2" />
-                Center align
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <AlignRight className="w-4 h-4 mr-2" />
-                Right align
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-2 flex-shrink-0">
-                <MoreHorizontal className="w-4 h-4 text-gray-600" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>
-                <List className="w-4 h-4 mr-2" />
-                Bullet List
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <ListOrdered className="w-4 h-4 mr-2" />
-                Numbered List
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Indent className="w-4 h-4 mr-2" />
-                Increase Indent
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Outdent className="w-4 h-4 mr-2" />
-                Decrease Indent
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <HeadingLevelButton />
+          <FontFamilyButton />
+          <AlignButton />
         </div>
       </div>
     </div>
