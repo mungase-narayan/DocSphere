@@ -13,6 +13,7 @@ import Underline from "@tiptap/extension-underline";
 import FontFamily from "@tiptap/extension-font-family";
 import TextStyle from "@tiptap/extension-text-style";
 import Highlight from "@tiptap/extension-highlight";
+import TextAlign from "@tiptap/extension-text-align";
 import Link from "@tiptap/extension-link";
 import { Color } from "@tiptap/extension-color";
 
@@ -64,6 +65,9 @@ const Editor = () => {
       Highlight.configure({ multicolor: true }),
       Color,
       FontFamily,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
       TextStyle,
       Underline,
       Image,
