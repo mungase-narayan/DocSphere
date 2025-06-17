@@ -17,7 +17,6 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  AlignJustify,
   List,
   ListOrdered,
   Indent,
