@@ -42,6 +42,12 @@ import {
   ImageIcon,
   UploadIcon,
   SearchIcon,
+  AlignLeftIcon,
+  AlignRightIcon,
+  AlignCenterIcon,
+  AlignJustifyIcon,
+  ListIcon,
+  ListOrderedIcon,
 } from "lucide-react";
 
 import {
@@ -64,8 +70,72 @@ import { Button } from "@/components/ui/button";
 import { useEditorStore } from "@/store/use-editor-store";
 import { type Level } from "@tiptap/extension-heading";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogFooter, DialogHeader } from "@/components/ui/dialog";
-import { DialogContent, DialogTitle } from "@radix-ui/react-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTitle,
+  DialogHeader,
+} from "@/components/ui/dialog";
+
+const AlignButton = () => {
+  const { editor } = useEditorStore();
+
+  const alignments = [
+    {
+      label: "Align Left",
+      value: "left",
+      icon: AlignLeftIcon,
+    },
+    {
+      label: "Align Center",
+      value: "center",
+      icon: AlignCenterIcon,
+    },
+    {
+      label: "Align Right",
+      value: "right",
+      icon: AlignRightIcon,
+    },
+    {
+      label: "Align Justify",
+      value: "justify",
+      icon: AlignJustifyIcon,
+    },
+  ];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={"ghost"}
+          className={
+            "h-8 min-w-7 shrink-0 items-center justify-center rounded-sm hover:bg-neutral-200/60  px-1.5 overflow-hidden text-sm"
+          }
+        >
+          <AlignLeftIcon className="size-4" />
+          <ChevronDown className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="p-1 flex flex-col gap-y-1 ">
+        {alignments.map(({ label, value, icon: Icon }) => (
+          <Button
+            variant={"ghost"}
+            key={value}
+            onClick={() => editor?.chain().focus().setTextAlign(value).run()}
+            className={cn(
+              "flex items-center justify-center gap-x-2 px-2 py-1 rounded-sm hover:bg-neutral-200/80",
+              editor?.isActive({ TextAlign: value }) && "bg-neutral-200/80"
+            )}
+          >
+            <Icon className="size-4" />
+            <span className="text-sm">{label}</span>
+          </Button>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 const ImageButton = () => {
   const { editor } = useEditorStore();
@@ -92,19 +162,31 @@ const ImageButton = () => {
     input.click();
   };
 
-  const handleImageUrlSubmit = () => {};
+  const handleImageUrlSubmit = () => {
+    if (imageUrl) {
+      onChange(imageUrl);
+      setImageUrl("");
+      setIsDialogOpen(false);
+    }
+  };
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="p-2">
+          <Button
+            size={"sm"}
+            variant={"ghost"}
+            className={
+              "h-8 min-w-7 shrink-0 items-center justify-center rounded-sm hover:bg-neutral-200/60  px-1.5 overflow-hidden"
+            }
+          >
             <ImageIcon className="size-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="p-2.5 flex items-center justify-center gap-x-2">
+        <DropdownMenuContent className="p-2.5 flex flex-col items-center justify-center gap-x-2">
           <DropdownMenuItem onClick={onUpload}>
             <UploadIcon className="size-4 mr-2" />
-            Upload
+            Upload image
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
             <SearchIcon className="size-4 mr-2" />
@@ -154,7 +236,13 @@ const LinkButton = () => {
       }}
     >
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="p-2">
+        <Button
+          size={"sm"}
+          variant={"ghost"}
+          className={
+            "h-8 min-w-7 shrink-0 items-center justify-center rounded-sm hover:bg-neutral-200/60  px-1.5 overflow-hidden"
+          }
+        >
           <Link className="size-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -478,32 +566,21 @@ export default function ResponsiveDocsToolbar() {
         onClick: () => editor?.chain().focus().unsetAllMarks().run(),
       },
     ],
-    // Link section
-    [
-      {
-        label: "Comment",
-        icon: MessageSquarePlusIcon,
-        onClick: () => {
-          console.log("Comment clicked");
-        },
-        isActive: false,
-      },
-    ],
     // List sections
     [
       {
         label: "Bulleted List",
-        icon: List,
-        onClick: () => toggleButton("bulletList"),
-        isActive: activeButtons.includes("bulletList"),
+        icon: ListIcon,
+        onClick: () => editor?.chain().focus().toggleBulletList().run(),
+        isActive: editor?.isActive("bulletList"),
       },
     ],
     [
       {
-        label: "Numbered List",
-        icon: ListOrdered,
-        onClick: () => toggleButton("numberedList"),
-        isActive: activeButtons.includes("numberedList"),
+        label: "Ordered List",
+        icon: ListOrderedIcon,
+        onClick: () => editor?.chain().focus().toggleOrderedList().run(),
+        isActive: editor?.isActive("orderedList"),
       },
     ],
     // Indent section
@@ -826,7 +903,13 @@ export default function ResponsiveDocsToolbar() {
 
           <Separator orientation="vertical" className="h-6 mx-1" />
 
-          <Button variant="ghost" size="sm" className="p-2">
+          <Button
+            size={"sm"}
+            variant={"ghost"}
+            className={
+              "h-8 min-w-7 shrink-0 items-center justify-center rounded-sm hover:bg-neutral-200/60  px-1.5 overflow-hidden"
+            }
+          >
             <MessageSquarePlusIcon />
           </Button>
 
@@ -918,32 +1001,7 @@ export default function ResponsiveDocsToolbar() {
           <Separator orientation="vertical" className="h-6 mx-1" />
 
           {/* Alignment */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-2">
-                <AlignLeft className="w-4 h-4 text-gray-600" />
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>
-                <AlignLeft className="w-4 h-4 mr-2" />
-                Left align
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <AlignCenter className="w-4 h-4 mr-2" />
-                Center align
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <AlignRight className="w-4 h-4 mr-2" />
-                Right align
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <AlignJustify className="w-4 h-4 mr-2" />
-                Justify
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <AlignButton />
 
           {/* Line Spacing */}
           <DropdownMenu>
